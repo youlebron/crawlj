@@ -16,7 +16,6 @@ def req(url):
     json = urllib2.urlopen(req).read()
     return json
 
-
 district_names = u"鼓楼 建邺 秦淮 玄武 雨花台 栖霞 江宁 浦口".split(" ")
 
 
@@ -47,7 +46,6 @@ def handlereq(a):
                          'process_status': data['process_status'], 'district_name': data['district_name'], 'company': company, 'jfsj': jfsj,
                          'totalscore': totalscore,'url':url}
                 newhlist.append(ndata)
-
 
 url = r'https://nj.fang.lianjia.com/loupan/bp200ep350nht1nht6nhs1/?_t=1'
 a = jsonpickle.loads(req(url))
