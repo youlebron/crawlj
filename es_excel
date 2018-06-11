@@ -1,0 +1,90 @@
+# -*- coding: utf-8 -*-
+
+import jsonpickle
+
+
+import os
+
+import constants
+
+
+import xlwt
+import re
+import redis
+redis_conf = "10.171.125.56:6379:1".split(":")
+redis_pool = redis.ConnectionPool(host=redis_conf[0], port=redis_conf[1], db=redis_conf[2])
+r = redis.Redis(connection_pool=redis_pool)
+a = r.lrange(constants.ITEM_STORE_KEY, 0, r.llen(constants.ITEM_STORE_KEY))
+
+import ast
+newhlist = [ast.literal_eval(sa) for sa in a]
+
+style = xlwt.easyxf('font: name Consolas, bold on')
+wb = xlwt.Workbook(encoding="utf-8")
+wb.__dict__['_Workbook__sst'].encoding = 'utf-8'
+ws = wb.add_sheet(u"二手房")
+rcnt = 1
+cnt = 0
+
+ks = []
+for k, v in dict(newhlist[0]).iteritems():
+    ws.write(0, cnt, k, style)
+    cnt += 1
+    ks.append(k)
+if "distance2train" not in k:
+    ks.append("distance2train")
+    ws.write(0, cnt, "distance2train", style)
+for data in newhlist:
+    try:
+        if data['car_time'] == 8589934592:
+            continue
+    except:
+        continue
+    cnt = 0
+    for k in ks:
+        ws.col(cnt).width = 15 * 256
+        v = data[k] if data.has_key(k) else ""
+        if k == "build_year":
+            if v == u"满两年":
+                v = 2
+            elif v == u"满五年":
+                v = 5
+            else:
+                v = 0
+        if k == "real_space" or k == "build_space" or k == "average_price" or k == "watch_num" or k == "focus_num":
+            if v != u"暂无数据":
+                m = re.compile("[\\d\\.]+").findall(v)
+                if m:
+                    v = m[0]
+        if k == "check_sale_time" or k == "last_sale_time" or k=="price":
+            v = v.replace("\"","",-1)
+        if k == "have_flat":
+            if v.strip() == u"无电梯":
+                v = 0
+            else:
+                v = 1
+        if k == "model":
+            m = re.compile("[\\d\\.]+").findall(v)
+            if len(m) > 1:
+                v = reduce(lambda a,b:a+b, m)
+
+        v = v if type(v) == unicode else jsonpickle.encode(v)
+        ws.write(rcnt, cnt, v, style)
+        cnt += 1
+    rcnt += 1
+wb.save(os.path.join("./", constants.EXCEL_NAME))
+
+from scrapy import cmdline
+cmdline.execute("scrapy crawl lianjiaspider".split())
+
+# Automatically created by: scrapy startproject
+#
+# For more information about the [deploy] section see:
+# https://scrapyd.readthedocs.org/en/latest/deploy.html
+
+[settings]
+default = LianJia.settings
+
+
+[deploy]
+project = LianJia
